@@ -11,7 +11,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # Persist data in a project folder so it stays in sync with your local workspace/VS
+      - ./postgres_data:/var/lib/postgresql/data
     networks:
       edge:
         aliases:
@@ -31,6 +32,3 @@ networks:
   edge:
     name: edge
     driver: bridge  
-volumes:
-  postgres_data:
-
