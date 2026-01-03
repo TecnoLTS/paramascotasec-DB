@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: next-test-db
     restart: unless-stopped
     environment:
@@ -11,8 +11,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Persist data in a project folder so it stays in sync with your local workspace/VS
-      - ./postgres_data:/var/lib/postgresql/data
+      # Datos de Postgres 16 (ya migrados)
+      - ./postgres16_data:/var/lib/postgresql/data
+      # Carpeta para backups .sql o .dump
+      - ./backups:/backups
     networks:
       edge:
         aliases:
@@ -31,4 +33,4 @@ services:
 networks:
   edge:
     name: edge
-    driver: bridge  
+    driver: bridge
