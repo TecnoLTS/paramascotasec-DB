@@ -1,2 +1,6 @@
-backups/backup.sql
+.env
+.env.*
+!.env.example
+backups/*.sql
+backups/*.tar.gz
 postgres16_data/

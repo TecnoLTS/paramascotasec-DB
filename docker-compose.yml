@@ -4,12 +4,12 @@ services:
     container_name: next-test-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
-      POSTGRES_DB: ${POSTGRES_DB:-paramascotasec}
+      POSTGRES_USER: ${POSTGRES_USER:?Define POSTGRES_USER en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Define POSTGRES_DB en .env}
       TZ: America/Bogota
     ports:
-      - "127.0.0.1:5432:5432"
+      - "${POSTGRES_BIND_IP:?Define POSTGRES_BIND_IP en .env}:${POSTGRES_PORT:?Define POSTGRES_PORT en .env}:5432"
     volumes:
       # Datos de Postgres 16 (ya migrados)
       - ./postgres16_data:/var/lib/postgresql/data
@@ -20,7 +20,7 @@ services:
         aliases:
           - db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?Define POSTGRES_USER en .env}"]
       interval: 10s
       timeout: 5s
       retries: 5
