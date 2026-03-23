@@ -34,6 +34,8 @@ Variables clave:
 - `POSTGRES_PASSWORD`
 - `POSTGRES_DB`
 - `POSTGRES_BIND_IP`
+  En desarrollo puedes usar `0.0.0.0` para conectarte desde pgAdmin en otra máquina de tu red.
+  En producción mantén `127.0.0.1` y entra por túnel SSH o desde la misma máquina.
 - `POSTGRES_PORT`
 - `BACKUP_ENCRYPTION_PASSPHRASE`
 
