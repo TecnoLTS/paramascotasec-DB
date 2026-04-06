@@ -68,16 +68,16 @@ Por defecto hace una limpieza segura para pruebas:
 
 borra productos, variantes, imágenes, lotes, compras, pedidos, descuentos y POS
 conserva User, Setting y Tenant para no perder acceso ni configuración
-Uso normal:
 
+Uso normal:
 cd /home/admincenter/contenedores/paramascotasec-backend
 ./scripts/reset_test_data.sh development
-Sin confirmación interactiva:
 
+Sin confirmación interactiva:
 cd /home/admincenter/contenedores/paramascotasec-backend
 ./scripts/reset_test_data.sh development --yes
-Limpieza total, incluyendo usuarios:
 
+Limpieza total, incluyendo usuarios:
 cd /home/admincenter/contenedores/paramascotasec-backend
 ./scripts/reset_test_data.sh development --yes --full
 Lo validé con bash -n y --help. Si quieres, el siguiente paso útil es dejar otro script hermano que además vuelva a sembrar datos mínimos de prueba después de limpiar.
