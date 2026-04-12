@@ -1,78 +1,58 @@
-# Base de datos `paramascostas-DB`
+# paramascostas-DB (Capa de Base de Datos) 🐘
 
-Servicio PostgreSQL usado por el stack de ParaMascotas.
+Contenedor que provisiona la versión Postgres al resto de microservicios usando túneles seguros dedicados.
 
-## Flujo normal
-
-Script único:
+## 🏭 1. Entorno de Producción
+Prioriza máxima seguridad restringiendo los saltos de IPs a lo estrictamente interno.
 
 ```bash
 cd /home/admincenter/contenedores/paramascostas-DB
-./scripts/deploy.sh development
-./scripts/deploy.sh production
+./scripts/deploy-production.sh
 ```
 
-Los scripts `deploy-development.sh` y `deploy-production.sh` siguen existiendo solo por compatibilidad.
+---
 
-## Configuración
+## 🛠️ 2. Entorno de Desarrollo
+Extiende un canal abierto para visores externos o desarrolladores conectados por red de LAN/VPN.
 
-Archivo principal:
-- `.env`
+```bash
+cd /home/admincenter/contenedores/paramascostas-DB
+./scripts/deploy-development.sh
+```
 
-Base de referencia:
-- [.env.example](/home/admincenter/contenedores/paramascostas-DB/.env.example)
+---
 
-Lógica compartida:
-- [common.sh](/home/admincenter/contenedores/paramascostas-DB/scripts/common.sh)
+## 📌 3. Datos Relevantes y Contexto a Tomar en Cuenta
 
-Variables clave:
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `POSTGRES_DB`
-- `POSTGRES_BIND_IP`
-- `POSTGRES_PORT`
-- `BACKUP_ENCRYPTION_PASSPHRASE`
+### 🔒 Backups y Restauración (Snapshots Asegurados)
+El proceso de captura y recuperación de datos es vital y está completamente automatizado, pero requiere tu atención:
 
-Recomendación:
-- en desarrollo usa `POSTGRES_BIND_IP=0.0.0.0` si te conectarás desde otra máquina de tu red;
-- en producción mantén `127.0.0.1`.
-
-## Backups
-
-Generar snapshot cifrado y detener la DB:
-
+**A) Proceso para sacar un Snapshot (Backup Cifrado):**
+Para resguardar el ecosistema de la base de datos de manera inviolable (cifrado AES) antes de hacer actualizaciones peligrosas del servidor, se ejecuta el siguiente comando:
 ```bash
 cd /home/admincenter/contenedores/paramascostas-DB
 ./scripts/backup-and-stop.sh production
 ```
+*Este proceso generará un snapshot encapsulado y luego detendrá la base de datos de forma segura para evitar escritura residual.*
 
-## Verificación
+**B) Proceso para levantar la DB usando el Snapshot (Restauración):**
+Si el servidor fue formateado, la base de datos destruida (por ejemplo usando `docker volume rm`) o estás clonando el servidor en otra máquina, **la restauración se hace de forma auto-mágica al levantar el sistema por primera vez**.
 
+No necesitas comandos manuales de importación de SQL; el proceso es simplemente desplegar el entorno en una base limpia:
 ```bash
 cd /home/admincenter/contenedores/paramascostas-DB
-docker compose ps
-docker compose logs -f db
+./scripts/deploy-development.sh   # O deploy-production.sh
 ```
+*¿Qué ocurre internamente?*
+1. Al levantar, el motor Postgres notará que no tiene volumen (tablas en cero).
+2. Buscará automáticamente si existe el snapshot maestro almacenado en `/backups/backup.sql.enc`.
+3. Pedirá desencriptar el archivo (si la llave existe en las variables).
+4. **Levantará e inyectará absolutamente toda la información estructurada que guardaste.**
 
-
-
-Qué hace:
-
-borra Order, OrderItem, PosShift, PosMovement
-borra InventoryLotAllocation
-borra DiscountAudit ligado a pedidos
-borra AuthSecurityEvent de order_pricing_tamper
-restaura cada lote a initial_quantity
-recompone Product.quantity desde lotes
-pone Product.sold = 0
-deja intactos catálogo, compras, usuarios, settings y tenants
-Uso:
-
-cd /home/admincenter/contenedores/paramascotasec-backend
-./scripts/reset_sales_data.sh development
-
-
-Sin confirmación interactiva:
-cd /home/admincenter/contenedores/paramascotasec-backend
-./scripts/reset_sales_data.sh development --yes
-
+### 🌐 Bind IP y Acceso a Base de Datos
+*   **Modo Local (Development):** Variable `POSTGRES_BIND_IP=0.0.0.0` para poder espiarla con software (e.g., DBeaver o PgAdmin).
+*   **Modo Producción:** Enquista herméticamente la comunicación bajo capa local cruzando en IP unida `127.0.0.1`.
+*   Para revisar los logs si la restauración falla:
+    ```bash
+    docker compose logs -f db
+    ```
