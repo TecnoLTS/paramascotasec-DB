@@ -55,38 +55,37 @@ resolve_env_file() {
 
   if [[ "${mode}" == "development" ]]; then
     local env_file="${APP_DIR}/.env.development"
-
-    if [[ -f "${env_file}" ]]; then
-      printf '%s\n' "${env_file}"
-      return 0
-    fi
-
-    if [[ -f "${APP_DIR}/.env.development.example" ]]; then
-      cp "${APP_DIR}/.env.development.example" "${env_file}"
-      echo "Se creo ${env_file} desde .env.development.example."
-    elif [[ -f "${APP_DIR}/.env" ]]; then
-      cp "${APP_DIR}/.env" "${env_file}"
-      echo "Se creo ${env_file} desde .env para separar desarrollo de produccion."
-    elif [[ -f "${APP_DIR}/.env.example" ]]; then
-      cp "${APP_DIR}/.env.example" "${env_file}"
-      echo "Se creo ${env_file} desde .env.example."
-    else
-      echo "No se encontro .env, .env.development.example ni .env.example en ${APP_DIR}" >&2
-      exit 1
+    if [[ ! -f "${env_file}" ]]; then
+      if [[ -f "${APP_DIR}/.env.development.example" ]]; then
+        cp "${APP_DIR}/.env.development.example" "${env_file}"
+        echo "Se creo ${env_file} desde .env.development.example."
+      elif [[ -f "${APP_DIR}/.env" ]]; then
+        cp "${APP_DIR}/.env" "${env_file}"
+        echo "Se creo ${env_file} desde .env para separar desarrollo de produccion."
+      elif [[ -f "${APP_DIR}/.env.example" ]]; then
+        cp "${APP_DIR}/.env.example" "${env_file}"
+        echo "Se creo ${env_file} desde .env.example."
+      else
+        echo "No se encontro .env, .env.development.example ni .env.example en ${APP_DIR}" >&2
+        exit 1
+      fi
     fi
 
     upsert_env_value "${env_file}" "POSTGRES_BIND_IP" "0.0.0.0"
+    upsert_env_value "${env_file}" "DB_ENV" "development"
 
     printf '%s\n' "${env_file}"
     return 0
   fi
 
   if [[ "${mode}" == "production" && -f "${APP_DIR}/.env.production" ]]; then
+    upsert_env_value "${APP_DIR}/.env.production" "DB_ENV" "production"
     printf '%s\n' "${APP_DIR}/.env.production"
     return 0
   fi
 
   if [[ -f "${APP_DIR}/.env" ]]; then
+    upsert_env_value "${APP_DIR}/.env" "DB_ENV" "production"
     printf '%s\n' "${APP_DIR}/.env"
     return 0
   fi
@@ -94,6 +93,7 @@ resolve_env_file() {
   if [[ -f "${APP_DIR}/.env.example" ]]; then
     cp "${APP_DIR}/.env.example" "${APP_DIR}/.env"
     echo "Se creo ${APP_DIR}/.env desde .env.example. Ajusta credenciales si hace falta."
+    upsert_env_value "${APP_DIR}/.env" "DB_ENV" "production"
     printf '%s\n' "${APP_DIR}/.env"
     return 0
   fi
@@ -114,6 +114,17 @@ load_env_file() {
   : "${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en ${env_file}}"
   : "${POSTGRES_DB:?Falta POSTGRES_DB en ${env_file}}"
   : "${BACKUP_ENCRYPTION_PASSPHRASE:?Falta BACKUP_ENCRYPTION_PASSPHRASE en ${env_file}}"
+}
+
+assert_db_mode() {
+  local mode="${1:-production}"
+  local container_env
+
+  container_env="$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' next-test-db 2>/dev/null | awk -F= '/^DB_ENV=/{print $2; exit}')"
+  if [[ "${container_env}" != "${mode}" ]]; then
+    echo "La base de datos quedo en DB_ENV=${container_env:-desconocido}, esperado ${mode}" >&2
+    exit 1
+  fi
 }
 
 compose_cmd() {
@@ -140,6 +151,22 @@ wait_for_db() {
 
   echo "PostgreSQL no quedo listo a tiempo" >&2
   exit 1
+}
+
+deploy_database() {
+  local mode="${1:-production}"
+  local env_file
+
+  ensure_prereqs
+  env_file="$(resolve_env_file "${mode}")"
+  load_env_file "${env_file}"
+
+  echo "Levantando PostgreSQL en ${mode} usando ${env_file}..."
+  compose_cmd "${env_file}" up -d --force-recreate --remove-orphans db
+  wait_for_db "${env_file}"
+  assert_db_mode "${mode}"
+  compose_cmd "${env_file}" ps
+  echo "Base de datos ${mode} lista"
 }
 
 reset_data_dir() {
