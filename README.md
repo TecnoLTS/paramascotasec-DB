@@ -30,24 +30,29 @@ El proceso de captura y recuperación de datos es vital y está completamente au
 **A) Proceso para sacar un Snapshot (Backup Cifrado):**
 Para resguardar el ecosistema de la base de datos de manera inviolable (cifrado AES) antes de hacer actualizaciones peligrosas del servidor, se ejecuta el siguiente comando:
 ```bash
-cd /home/admincenter/contenedores/paramascostas-DB
+cd /home/admincenter/contenedores/paramascotasec-DB
 ./scripts/backup-and-stop.sh production
 ```
 *Este proceso generará un snapshot encapsulado y luego detendrá la base de datos de forma segura para evitar escritura residual.*
 
 **B) Proceso para levantar la DB usando el Snapshot (Restauración):**
-Si el servidor fue formateado, la base de datos destruida (por ejemplo usando `docker volume rm`) o estás clonando el servidor en otra máquina, **la restauración se hace de forma auto-mágica al levantar el sistema por primera vez**.
+Si el servidor fue formateado, la base de datos destruida (por ejemplo borrando `postgres16_data`) o estás clonando el servidor en otra máquina, la restauración se hace con el script dedicado de restore.
 
-No necesitas comandos manuales de importación de SQL; el proceso es simplemente desplegar el entorno en una base limpia:
+El despliegue normal no restaura backups automáticamente; solo levanta PostgreSQL con el estado actual del directorio de datos. Para reconstruir la base desde el snapshot cifrado usa:
 ```bash
-cd /home/admincenter/contenedores/paramascostas-DB
-./scripts/deploy-development.sh   # O deploy-production.sh
+cd /home/admincenter/contenedores/paramascotasec-DB
+./scripts/deploy-from-backup.sh development   # O production
+```
+También puedes ejecutar directamente:
+```bash
+./scripts/restore-from-backup.sh development   # O production
 ```
 *¿Qué ocurre internamente?*
-1. Al levantar, el motor Postgres notará que no tiene volumen (tablas en cero).
-2. Buscará automáticamente si existe el snapshot maestro almacenado en `/backups/backup.sql.enc`.
-3. Pedirá desencriptar el archivo (si la llave existe en las variables).
-4. **Levantará e inyectará absolutamente toda la información estructurada que guardaste.**
+1. Apaga el servicio si está corriendo.
+2. Limpia el directorio local de datos `postgres16_data`.
+3. Vuelve a levantar PostgreSQL en vacío.
+4. Desencripta `backups/backup.sql.enc`.
+5. Restaura el dump completo dentro del cluster.
 
 ### 🌐 Bind IP y Acceso a Base de Datos
 *   **Modo Local (Development):** Variable `POSTGRES_BIND_IP=0.0.0.0` para poder espiarla con software (e.g., DBeaver o PgAdmin).
