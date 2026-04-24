@@ -1,4 +1,4 @@
-# paramascostas-DB (Capa de Base de Datos) 🐘
+# paramascotas-DB (Capa de Base de Datos) 🐘
 
 Contenedor que provisiona la versión Postgres al resto de microservicios usando túneles seguros dedicados.
 
@@ -6,7 +6,7 @@ Contenedor que provisiona la versión Postgres al resto de microservicios usando
 Prioriza máxima seguridad restringiendo los saltos de IPs a lo estrictamente interno.
 
 ```bash
-cd /home/admincenter/contenedores/paramascostas-DB
+cd /home/admincenter/contenedores/paramascotas-DB
 ./scripts/deploy-production.sh
 ```
 
@@ -16,7 +16,7 @@ cd /home/admincenter/contenedores/paramascostas-DB
 Extiende un canal abierto para visores externos o desarrolladores conectados por red de LAN/VPN.
 
 ```bash
-cd /home/admincenter/contenedores/paramascostas-DB
+cd /home/admincenter/contenedores/paramascotas-DB
 ./scripts/deploy-development.sh
 ```
 
