@@ -61,3 +61,18 @@ También puedes ejecutar directamente:
     ```bash
     docker compose logs -f db
     ```
+
+
+
+Está aquí:
+
+/home/admincenter/contenedores/paramascotasec-backend/scripts/reset_sales_data.sh
+
+Para usarlo en desarrollo:
+
+cd /home/admincenter/contenedores/paramascotasec-backend
+./scripts/reset_sales_data.sh development
+O sin confirmación interactiva:
+
+./scripts/reset_sales_data.sh development --yes
+
